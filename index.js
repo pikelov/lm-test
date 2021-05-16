@@ -1,48 +1,41 @@
 'use strict'
 
-createSquare('div', 'box', 'BODY', 100);
+// - Функция вызывается однократно на пустой странице браузера (пустой тег body).
+//  В момент вызова функция рисует чёрный квадрат со стороной 100px в левом верхнем углу окна.
+let square = new Square({
+  selector: "body",
+  size: 100,
+})
+const start = Date.now();
 
-const box = document.querySelector('.box')
-let pos = 0;
-
-setTimeout(startOp, 1000)
-
-//=====HELPERS
-function startOp(){
-  moveSquare();
+setTimeout(function (){
+  //В этот же момент (через секунду после вызова функции) посылается GET-запрос на переданный URL.
   fetch('https://keev.me/f/slowpoke.php')
     .then(response => {
+      console.log(`Get response after ${start - Date.now()} ms after function`)
       if(!response.ok) {
-        box.style.backgroundColor= 'red';
-        throw response.statusText
-      } })
-    .then(data => data ? box.style.backgroundColor= 'green' : box.style.backgroundColor= 'blue')
+        square.applyViaQueue("setStyles", { backgroundColor: "red" });
+      }
+      else {
+        return response.text();
+      }
+    })
+    .then(data => {
+        if(data !== undefined) {
+            square.applyViaQueue("setStyles", { backgroundColor: data === "1" ? 'green' : 'blue' })
+        }
+    })
     .catch((error) => {
     console.log('Error:', error);
-  });
-} 
-//======
-function createSquare(element, classAdd, parentNode, size) {
-  const domNode = document.getElementsByTagName(parentNode)[0];
-
-  if (typeof domNode === 'undefined' || domNode === null) return;
-  const elem = document.createElement(element);console.log(elem)
-  elem.classList.add(classAdd);
-  elem.style.width = size + 'px'
-  elem.style.height = size + 'px'
-  elem.style.backgroundColor = 'black'
-  domNode.insertAdjacentElement('afterbegin', elem);
-}
-//===
-function moveSquare() {
-  const move = () => {
-    pos+= 1;
-    box.style.left = pos+"px";
-  }
-  const stop = () => {
-    clearInterval(interval);
-  }
+    });
   
-  const interval = setInterval(move, 10);
-  setTimeout(stop, 1000);
-}
+  // Через секунду после вызова функции квадрат начинает равномерное движение вправо со скоростью 100px в секунду.
+  square.moveSquareRight("right", 10)
+  console.log(`after ${start - Date.now()} ms after function move square & fetch api`)
+}, 1000)
+
+// Через две секунды после вызова (то есть через одну секунду после старта движения) квадрат должен остановиться.
+setTimeout(function (){
+  console.log(`after ${start - Date.now()} ms after function stop square`)
+  square.stopMoves()
+}, 2000)
